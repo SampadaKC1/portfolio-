@@ -4,9 +4,10 @@ import { Link } from 'react-router-dom';
 import Sampu from '../Components/sampu';
 import WeatherApp from '../Components/Weather';
 // import NewsApp from '../Components/NewsApp';
-import Portfolio4 from '../Components/hero';
+
 import NewsList from '../Components/NewsApp';
 import TypingTest from '@/Components/TypingTest';
+import Portfolio4 from '@/Components/Hero';
 
 const Home = () => {
   return (
