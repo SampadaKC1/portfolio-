@@ -1,78 +1,123 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
-// Your API key from .env file
+const NEWS_API_URL = "https://newsapi.org/v2/everything";
 const API_KEY = import.meta.env.VITE_NEWS_API_KEY;
+const pagesize = 12;
 
-const NewsApp = () => {
-  // States to store news, loading status, and error messages
+const NewsList = () => {
   const [articles, setArticles] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  // Function to get news about Nepal
-  const fetchNepalNews = async () => {
-    setLoading(true); // show loading
-    setError("");     // clear any previous error
-    setArticles([]);  // clear old news
+  const fetchPage = useCallback(
+    async (pageNum) => {
+      setLoading(true);
+      try {
+        const params = {
+          q: "latest",
+          apiKey: API_KEY,
+          page: pageNum,
+          pageSize: pagesize,
+        };
+        const res = await axios.get(NEWS_API_URL, { params });
+        setArticles(res.data.articles);
+        setTotalResults(res.data.totalResults);
+      } catch {
+        console. log("news fetch garda error aayo" , err);
+        setArticles([]);
+        setTotalResults(0);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [API_KEY]
+  );
 
-    try {
-      const response = await axios.get(
-        `https://newsapi.org/v2/everything?q=nepal&sortBy=publishedAt&pageSize=10&apiKey=${API_KEY}`
-      );
-      setArticles(response.data.articles); // save articles to state
-    } catch (err) {
-      setError("Sorry! Could not load news. Please try again."); // show error
-    } finally {
-      setLoading(false); // stop loading
-    }
-  };
+  useEffect(() => {
+    fetchPage(page);
+  }, [page, fetchPage]);
+
+  const totalPages = Math.max(1, Math.ceil(totalResults / pagesize));
 
   return (
-    <div className="min-h-screen bg-blue-100 flex items-center justify-center px-4">
-      <div className="bg-white p-6 rounded shadow w-full max-w-3xl">
-        <h1 className="text-2xl font-bold text-center mb-4">📰 Nepal News</h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h2 className="text-3xl font-extrabold mb-8 text-gray-900 dark:text-gray-100">
+        News Results (Page {page} of {totalPages})
+      </h2>
 
-        {/* Load news button */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={fetchNepalNews}
-            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-          >
-            Load News
-          </button>
+      {loading ? (
+        <div className="text-center text-gray-500 dark:text-gray-400">
+          Loading...
         </div>
-
-        {/* Show loading text */}
-        {loading && <p className="text-center text-gray-500">Loading news...</p>}
-
-        {/* Show error if any */}
-        {error && <p className="text-center text-red-500">{error}</p>}
-
-        {/* Show news articles */}
-        {articles.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {articles.map((article, index) => (
-              <div key={index} className="bg-gray-50 p-4 rounded shadow">
-                <h2 className="font-semibold text-md mb-2">{article.title}</h2>
-                <p className="text-sm text-gray-600 mb-2">
-                  {article.description || "No description available."}
-                </p>
+      ) : articles.length === 0 ? (
+        <div className="text-center text-gray-600 dark:text-gray-400">
+          No articles found.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {articles.map((a, idx) => (
+            <article
+              key={a.url || idx}
+              className="flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300"
+            >
+              {a.urlToImage ? (
+                <img
+                  src={a.urlToImage}
+                  alt={a.title}
+                  loading="lazy"
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400">
+                  No image available
+                </div>
+              )}
+              <div className="p-4 flex flex-col flex-grow">
                 <a
-                  href={article.url}
+                  href={a.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-500 text-sm hover:underline"
+                  className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100 hover:text-sky-500 dark:hover:text-sky-400 transition-colors duration-200 line-clamp-2"
+                  title={a.title}
                 >
-                  Read more →
+                  {a.title}
                 </a>
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex-grow">
+                  {a.description || "No description available."}
+                </p>
+                <footer className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                  {a.source.name} &middot;{" "}
+                  {a.publishedAt
+                    ? new Date(a.publishedAt).toLocaleDateString()
+                    : "Unknown date"}
+                </footer>
               </div>
-            ))}
-          </div>
-        )}
+            </article>
+          ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      <div className="mt-10 flex justify-center gap-4">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(page - 1)}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md disabled:opacity-50 shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+        >
+          Prev
+        </button>
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(page + 1)}
+          className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-md disabled:opacity-50 shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 };
 
-export default NewsApp;
+export default NewsList;
