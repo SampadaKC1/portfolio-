@@ -1,7 +1,7 @@
 "use client"; // Next.js directive to make this a client-side component
 
 import { useEffect, useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const texts = [
