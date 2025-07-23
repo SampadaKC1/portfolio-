@@ -140,9 +140,9 @@ export default function TypingTest() {
         {error && <p className="text-red-600 font-semibold mt-2">{error}</p>}
 
         {/* Restart test button */}
-        <Button onClick={handleRestart} className="mt-4">
+        <button onClick={handleRestart} className="mt-4 bg-black px-2 py-3 rounded-2xl">
           Restart
-        </Button>
+        </button>
       </CardContent>
     </Card>
   );
